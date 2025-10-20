@@ -19,30 +19,12 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# --- Streamlit first so we can show messages early ---
-import streamlit as st
-
-# --- Ensure BeautifulSoup is available, install on the fly if needed ---
-BS4_AVAILABLE = False
-try:
-    from bs4 import BeautifulSoup  # type: ignore
-    BS4_AVAILABLE = True
-except Exception:
-    try:
-        import subprocess
-        st.warning("Installing 'beautifulsoup4' on the fly (first run may take up to a minute)...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "beautifulsoup4", "--quiet"])
-        from bs4 import BeautifulSoup  # type: ignore
-        BS4_AVAILABLE = True
-        st.success("'beautifulsoup4' installed successfully.")
-    except Exception as e:
-        st.error(f"Could not import or install 'beautifulsoup4': {e}")
-        # We'll continue with limited functionality (features that rely on HTML parsing will be disabled).
-
 import requests
+from bs4 import BeautifulSoup
 import json
 import time
 import re
+import os
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
@@ -53,6 +35,7 @@ from sentence_transformers import SentenceTransformer
 from typing import List, Dict, Tuple, Optional
 import pandas as pd
 from dataclasses import dataclass
+import streamlit as st
 from urllib.parse import quote_plus
 import praw
 from collections import Counter
@@ -130,13 +113,15 @@ class DataDrivenSEOAnalyzer:
             with st.spinner("Loading AI embedding model..."):
                 try:
                     # Comprehensive warning suppression
-                    import warnings as _warnings
+                    import warnings
                     import logging
 
-                    _warnings.filterwarnings("ignore")
+                    # Suppress all warnings temporarily
+                    warnings.filterwarnings("ignore")
                     logging.getLogger().setLevel(logging.ERROR)
 
                     # Temporarily redirect stderr
+                    import sys
                     from io import StringIO
                     old_stderr = sys.stderr
                     sys.stderr = StringIO()
@@ -164,14 +149,6 @@ class DataDrivenSEOAnalyzer:
         except:
             # Fallback stopwords if NLTK fails
             self.stop_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'this', 'that', 'these', 'those', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'up', 'down', 'out', 'off', 'over', 'under', 'again', 'further', 'then', 'once'}
-
-    # ---- Helper: require bs4 for HTML parsing features ----
-    def _require_bs4(self) -> bool:
-        if not BS4_AVAILABLE:
-            st.error("BeautifulSoup (bs4) is not available. Features that require HTML parsing are disabled. "
-                     "Please ensure the environment allows installing 'beautifulsoup4'.")
-            return False
-        return True
 
     def search_competitors(self, keyword: str, num_results: int = 10) -> List[str]:
         """Search for competitor URLs using Serper"""
@@ -364,9 +341,6 @@ class DataDrivenSEOAnalyzer:
 
     def scrape_competitor_content(self, urls: List[str], progress_bar=None) -> List[TopicData]:
         """Scrape competitor content with proper depth analysis"""
-        if not self._require_bs4():
-            return []
-
         all_topics = []
 
         for i, url in enumerate(urls):
@@ -400,11 +374,8 @@ class DataDrivenSEOAnalyzer:
                 content = re.sub(r'\s+', ' ', content).strip()
 
                 # Calculate total article word count
-                try:
-                    tokens = word_tokenize(content.lower())
-                except:
-                    tokens = content.lower().split()
-                total_words = len([w for w in tokens if w.isalpha() and w not in self.stop_words])
+                total_words = len([w for w in word_tokenize(content.lower())
+                                 if w.isalpha() and w not in self.stop_words])
 
                 if total_words > 100:
                     # Extract headings for topic analysis
@@ -644,9 +615,6 @@ class DataDrivenSEOAnalyzer:
 
     def analyze_website_relevance(self, website_url: str, target_topic: str, max_pages: int = None) -> Dict:
         """Analyze entire website to find irrelevant content using vector embeddings"""
-        if not self._require_bs4():
-            return {"error": "BeautifulSoup not available; website crawl disabled."}
-
         st.info(f"🔍 Analyzing {website_url} for topic relevance...")
 
         try:
@@ -708,9 +676,6 @@ class DataDrivenSEOAnalyzer:
 
     def _crawl_entire_website(self, base_url: str, max_pages: int = None) -> List[Dict]:
         """Advanced website crawler with safety limits and better handling"""
-        if not self._require_bs4():
-            return []
-
         pages_data = []
         visited_urls = set()
         urls_to_visit = [base_url]
@@ -785,11 +750,7 @@ class DataDrivenSEOAnalyzer:
                 content = re.sub(r'\s+', ' ', content).strip()
 
                 # Calculate word count
-                try:
-                    tokens = word_tokenize(content.lower())
-                except:
-                    tokens = content.lower().split()
-                word_count = len([w for w in tokens if w.isalpha()])
+                word_count = len([w for w in content.split() if w.isalpha()])
 
                 if word_count > 50:  # Include pages with substantial content
                     pages_data.append({
@@ -831,9 +792,6 @@ class DataDrivenSEOAnalyzer:
 
     def _discover_sitemap_urls(self, base_url: str) -> List[str]:
         """Try to find and parse XML sitemaps for faster URL discovery"""
-        if not self._require_bs4():
-            return []
-
         sitemap_urls = []
 
         # Clean base URL
@@ -899,9 +857,6 @@ class DataDrivenSEOAnalyzer:
 
     def _fallback_url_discovery(self, base_url: str) -> List[str]:
         """Fallback URL discovery for sites without sitemaps"""
-        if not self._require_bs4():
-            return [base_url]
-
         discovered_urls = [base_url]
 
         try:
@@ -947,9 +902,6 @@ class DataDrivenSEOAnalyzer:
 
     def _parse_sitemap_xml(self, xml_content: str, base_url: str) -> List[str]:
         """Parse XML sitemap to extract URLs with better error handling"""
-        if not self._require_bs4():
-            return []
-
         urls = []
         try:
             # Handle different XML parsers
@@ -1006,10 +958,7 @@ class DataDrivenSEOAnalyzer:
         ]
 
         for selector in content_selectors:
-            try:
-                elements = soup.select(selector)
-            except Exception:
-                elements = []
+            elements = soup.select(selector)
             if elements:
                 content = ' '.join([elem.get_text() for elem in elements])
                 break
@@ -1019,22 +968,13 @@ class DataDrivenSEOAnalyzer:
             body = soup.find('body')
             if body:
                 # Remove common navigation and sidebar elements
-                try:
-                    for noise in body.select('nav, .navigation, .sidebar, .menu, .footer, .header, .breadcrumb, .social, .share'):
-                        try:
-                            noise.decompose()
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+                for noise in body.select('nav, .navigation, .sidebar, .menu, .footer, .header, .breadcrumb, .social, .share'):
+                    noise.decompose()
                 content = body.get_text()
 
         # Strategy 3: Fallback to all text
         if not content:
-            try:
-                content = soup.get_text()
-            except Exception:
-                content = ""
+            content = soup.get_text()
 
         return content
 
@@ -1043,10 +983,7 @@ class DataDrivenSEOAnalyzer:
         from urllib.parse import urljoin, urlparse, urlunparse
 
         new_urls = []
-        try:
-            links = soup.find_all('a', href=True)
-        except Exception:
-            links = []
+        links = soup.find_all('a', href=True)
 
         for link in links:
             href = link['href'].strip()
@@ -1182,6 +1119,135 @@ class DataDrivenSEOAnalyzer:
                      annotation_text="High Relevance")
 
         return fig
+
+    def generate_actionable_topics(self, gaps: List[TopicData]) -> List[Dict]:
+        """Convert gaps to actionable topics"""
+        actionable_topics = []
+
+        for gap in gaps:
+            # Generate better topic titles
+            if gap.source == 'reddit':
+                topic_title = self._reddit_to_topic(gap.text)
+            elif gap.source == 'search_suggest':
+                topic_title = f"Ultimate Guide: {gap.text.title()}"
+            elif gap.source == 'depth_gap':
+                topic_title = gap.text  # Already formatted
+            else:
+                topic_title = f"Complete Guide: {gap.text}"
+
+            # Calculate scores
+            difficulty = self._estimate_difficulty(gap.text)
+            opportunity_score = self._calculate_opportunity_score(gap)
+
+            actionable_topics.append({
+                'title': topic_title,
+                'difficulty': difficulty,
+                'opportunity_score': opportunity_score,
+                'source': gap.source,
+                'upvotes': gap.upvotes,
+                'confidence': gap.confidence,
+                'why_gap': self._explain_gap(gap),
+                'content_angle': self._suggest_angle(gap)
+            })
+
+        # Sort by opportunity score
+        actionable_topics.sort(key=lambda x: x['opportunity_score'], reverse=True)
+        return actionable_topics
+
+    def _reddit_to_topic(self, reddit_text: str) -> str:
+        """Convert Reddit question to blog post title"""
+        text = reddit_text.strip()
+        text_lower = text.lower()
+
+        # Specific patterns for common topics
+        if 'seedbox' in text_lower:
+            if any(word in text_lower for word in ['slow', 'speed']):
+                return "How to Fix Slow Seedbox Performance: Complete Troubleshooting Guide"
+            elif any(word in text_lower for word in ['best', 'recommend']):
+                return "Best Seedbox Providers: Complete Comparison Guide 2025"
+            elif 'plex' in text_lower:
+                return "Seedbox + Plex Setup: Complete Media Server Guide"
+            else:
+                return "Ultimate Seedbox Guide: Everything You Need to Know"
+
+        elif any(word in text_lower for word in ['plex', 'media server']):
+            if 'mini pc' in text_lower:
+                return "Best Mini PC for Plex Server: Complete Hardware Guide 2025"
+            elif 'power' in text_lower:
+                return "Most Power-Efficient Plex Server Setup Guide"
+            else:
+                return "Complete Plex Media Server Setup Guide"
+
+        elif 'vpn' in text_lower:
+            if 'best' in text_lower:
+                return "Best VPN for Torrenting: Complete Privacy Guide 2025"
+            else:
+                return "Complete VPN Guide for Privacy and Security"
+
+        # Generic patterns
+        if text_lower.startswith('how to'):
+            return f"Complete Guide: {text}"
+        elif text_lower.startswith('what is'):
+            topic = text[7:].strip()  # Remove "what is"
+            return f"Complete Guide to {topic}"
+        elif text_lower.startswith('best'):
+            return f"{text} - Complete Guide 2025"
+        elif '?' in text:
+            clean_text = text.replace('?', '').strip()
+            return f"Complete Guide: {clean_text}"
+        else:
+            return f"Ultimate Guide: {text[:60]}..."
+
+    def _estimate_difficulty(self, text: str) -> str:
+        """Estimate content difficulty"""
+        text_lower = text.lower()
+        if any(word in text_lower for word in ['api', 'technical', 'advanced']):
+            return 'Hard'
+        elif any(word in text_lower for word in ['setup', 'install', 'configure']):
+            return 'Medium'
+        else:
+            return 'Easy'
+
+    def _calculate_opportunity_score(self, gap: TopicData) -> float:
+        """Calculate opportunity score 0-100"""
+        score = gap.confidence * 50
+
+        if gap.source == 'reddit' and gap.upvotes > 0:
+            score += min(gap.upvotes * 2, 30)
+
+        if gap.source == 'search_suggest':
+            score += 20
+
+        if gap.source == 'depth_gap':
+            score += 15
+
+        return min(score, 100)
+
+    def _explain_gap(self, gap: TopicData) -> str:
+        """Explain why this is a gap with clear actionable insight"""
+        if gap.source == 'reddit':
+            return f"Real users asking about this (upvotes: {gap.upvotes}), but competitors don't address it well"
+        elif gap.source == 'search_suggest':
+            return "People actively search for this, but current results are weak"
+        elif gap.source == 'depth_gap':
+            return f"Current best content is only {gap.word_count} words - opportunity for comprehensive coverage"
+        elif gap.source.startswith('semantic_'):
+            return "Topic is semantically different from existing competitor content"
+        else:
+            return "User demand exists but competition is low"
+
+    def _suggest_angle(self, gap: TopicData) -> str:
+        """Suggest content approach with specific recommendations"""
+        if gap.source == 'reddit':
+            return "FAQ/Problem-solving format - address specific user pain points from Reddit discussions"
+        elif gap.source == 'search_suggest':
+            return "SEO-optimized comprehensive guide targeting the exact search query people use"
+        elif gap.source == 'depth_gap':
+            return f"Create 2000+ word definitive guide (currently only {gap.word_count} words available)"
+        elif gap.source.startswith('semantic_'):
+            return "Unique angle not covered by competitors - first-mover advantage"
+        else:
+            return "Complete guide covering all aspects of the topic"
 
     def create_visualization(self, competitor_topics: List[TopicData],
                            all_user_topics: List[TopicData],
@@ -1425,20 +1491,32 @@ class DataDrivenSEOAnalyzer:
 # Streamlit App
 def main():
     st.set_page_config(
-        page_title="Data-Driven SEO Analyzer",
+        page_title="Content Gap Analyzer",
         page_icon="🎯",
         layout="wide",
         initial_sidebar_state="expanded"
     )
 
     # Header with logo and branding
-    col1 = st.columns([1])
-
+    col1, col2, col3 = st.columns([1, 2, 1])
 
     with col1:
+        # Add your logo here - you'll need to upload logo.png to your repo
+        try:
+            st.image("logo.png", width=120)
+        except:
+            st.write("🎯")  # Fallback emoji if no logo
+
+    with col2:
         st.title("Content Gap Analyzer")
         st.markdown("**Find content gaps using REAL user data!**")
 
+    with col3:
+        # Your website link
+        st.markdown("""
+        <div style='text-align: right; padding-top: 20px;'>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Add custom CSS for better styling
     st.markdown("""
@@ -1494,7 +1572,8 @@ def main():
 
     # Buy Me a Coffee Widget
     st.markdown("""
--    """, unsafe_allow_html=True)
+    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="deyangeorgiev" data-description="Support me on Buy me a coffee!" data-message="If this tool has helped you, consider getting me a coffee :) Thanks!" data-color="#5F7FFF" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+    """, unsafe_allow_html=True)
 
     # Sidebar
     with st.sidebar:
@@ -1633,6 +1712,22 @@ def main():
                     if fig:
                         # Display the chart with selection capability
                         event = st.plotly_chart(fig, use_container_width=True, key="main_chart")
+
+                        # Check for clicked points
+                        if st.session_state.get('clicked_point'):
+                            st.subheader("🎯 Selected Point Details")
+                            point_data = st.session_state.clicked_point
+
+                            st.write(f"**Type:** {point_data.get('trace_name', 'Unknown')}")
+                            st.write(f"**Topic:** {point_data.get('text', 'N/A')}")
+
+                            if point_data.get('url'):
+                                st.write(f"**URL:** [{point_data['url']}]({point_data['url']})")
+                                st.code(point_data['url'], language=None)
+
+                            if st.button("Clear Selection"):
+                                del st.session_state.clicked_point
+                                st.rerun()
 
                         # Instructions for users
                         st.info("💡 **Tip:** Click on legend items to show/hide data types. Use the legend toggle functionality to focus on specific data sources!")
