@@ -1503,29 +1503,15 @@ def main():
     with col1:
         # Add your logo here - you'll need to upload logo.png to your repo
         try:
-            st.image("logo.png", width=120)
+
         except:
-            st.write("🎯")  # Fallback emoji if no logo
+
 
     with col2:
-        st.title("🚀 Data-Driven Vector SEO Analyzer")
+        st.title("Data-Driven Content Gap Analyzer")
         st.markdown("**Find content gaps using REAL user data!**")
 
     with col3:
-        # Your website link
-        st.markdown("""
-        <div style='text-align: right; padding-top: 20px;'>
-            <a href='https://tororank.com/' target='_blank' style='
-                color: #ff4b4b;
-                text-decoration: none;
-                font-weight: bold;
-                border: 2px solid #ff4b4b;
-                padding: 8px 16px;
-                border-radius: 6px;
-                transition: all 0.3s;
-            '>Visit Our Website</a>
-        </div>
-        """, unsafe_allow_html=True)
 
     # Add custom CSS for better styling
     st.markdown("""
@@ -1653,14 +1639,6 @@ def main():
 
         # Sidebar footer with your branding
         st.markdown("---")
-        st.markdown("""
-        <div style='text-align: center; color: #666; font-size: 12px;'>
-            Made with ❤️ by<br>
-            <a href='https://tororank.com/' target='_blank' style='color: #ff4b4b; text-decoration: none;'>
-                TORO RANK
-            </a>
-        </div>
-        """, unsafe_allow_html=True)
 
     # Info
     with st.expander("ℹ️ What makes this different?"):
