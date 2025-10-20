@@ -1502,10 +1502,7 @@ def main():
 
     with col1:
         # Add your logo here - you'll need to upload logo.png to your repo
-        try:
-            #st.image("logo.png", width=120)
-        except:
-            #st.write("🎯")  # Fallback emoji if no logo
+
 
     with col2:
         st.title("Content Gap Analyzer")
