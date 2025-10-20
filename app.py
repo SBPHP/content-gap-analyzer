@@ -1498,20 +1498,27 @@ def main():
     )
 
     # Header with logo and branding
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2 = st.columns([1, 2, 1])
 
     with col1:
-        # Add your logo here - you'll need to upload logo.png to your repo
-        try:
-            st.image("", width=120)
-        except:
-            st.write("")  # Fallback emoji if no logo
-
-    with col2:
-        st.title("Content App Analyzer")
+        st.title("Content Gap Analyzer")
         st.markdown("**Find content gaps using REAL user data!**")
 
-    with col3:
+    with col2:
+        # Your website link
+        st.markdown("""
+        <div style='text-align: right; padding-top: 20px;'>
+            <a href='https://tororank.com/' target='_blank' style='
+                color: #ff4b4b;
+                text-decoration: none;
+                font-weight: bold;
+                border: 2px solid #ff4b4b;
+                padding: 8px 16px;
+                border-radius: 6px;
+                transition: all 0.3s;
+            '>Visit Our Website</a>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Add custom CSS for better styling
     st.markdown("""
@@ -1598,11 +1605,6 @@ def main():
             analyze_btn = st.button("🎯 Find Content Gaps", type="primary")
 
         else:  # Website Relevance Analysis
-            website_url = st.text_input(
-                "Website URL",
-                placeholder="https://tororank.com/",
-                help="Enter the website URL to analyze for content relevance"
-            )
             target_topic = st.text_input(
                 "Main Topic/Niche",
                 placeholder="e.g., digital marketing, web development, fitness",
@@ -1639,6 +1641,9 @@ def main():
 
         # Sidebar footer with your branding
         st.markdown("---")
+        st.markdown("""
+        -
+        """, unsafe_allow_html=True)
 
     # Info
     with st.expander("ℹ️ What makes this different?"):
