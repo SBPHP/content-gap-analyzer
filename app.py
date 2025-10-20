@@ -1498,22 +1498,13 @@ def main():
     )
 
     # Header with logo and branding
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1 = st.columns([1])
+
 
     with col1:
-        # Add your logo here - you'll need to upload logo.png to your repo
-
-
-    with col2:
         st.title("Content Gap Analyzer")
         st.markdown("**Find content gaps using REAL user data!**")
 
-    with col3:
-        # Your website link
-        st.markdown("""
-        <div style='text-align: right; padding-top: 20px;'>
-        </div>
-        """, unsafe_allow_html=True)
 
     # Add custom CSS for better styling
     st.markdown("""
