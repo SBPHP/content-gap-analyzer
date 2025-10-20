@@ -1491,7 +1491,7 @@ class DataDrivenSEOAnalyzer:
 # Streamlit App
 def main():
     st.set_page_config(
-        page_title="Content Gap Analyzer",
+        page_title="Data-Driven SEO Analyzer",
         page_icon="🎯",
         layout="wide",
         initial_sidebar_state="expanded"
@@ -1508,13 +1508,22 @@ def main():
             st.write("🎯")  # Fallback emoji if no logo
 
     with col2:
-        st.title("Content Gap Analyzer")
+        st.title("🚀 Data-Driven Vector SEO Analyzer")
         st.markdown("**Find content gaps using REAL user data!**")
 
     with col3:
         # Your website link
         st.markdown("""
         <div style='text-align: right; padding-top: 20px;'>
+            <a href='https://tororank.com/' target='_blank' style='
+                color: #ff4b4b;
+                text-decoration: none;
+                font-weight: bold;
+                border: 2px solid #ff4b4b;
+                padding: 8px 16px;
+                border-radius: 6px;
+                transition: all 0.3s;
+            '>Visit Our Website</a>
         </div>
         """, unsafe_allow_html=True)
 
