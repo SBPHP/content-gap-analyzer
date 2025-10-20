@@ -1498,13 +1498,34 @@ def main():
     )
 
     # Header with logo and branding
-    col1 = st.columns([1])
-
+    col1, col2, col3 = st.columns([1, 2, 1])
 
     with col1:
-        st.title("Content Gap Analyzer")
+        # Add your logo here - you'll need to upload logo.png to your repo
+        try:
+            st.image("logo.png", width=120)
+        except:
+            st.write("🎯")  # Fallback emoji if no logo
+
+    with col2:
+        st.title("🚀 Data-Driven Vector SEO Analyzer")
         st.markdown("**Find content gaps using REAL user data!**")
 
+    with col3:
+        # Your website link
+        st.markdown("""
+        <div style='text-align: right; padding-top: 20px;'>
+            <a href='https://tororank.com/' target='_blank' style='
+                color: #ff4b4b;
+                text-decoration: none;
+                font-weight: bold;
+                border: 2px solid #ff4b4b;
+                padding: 8px 16px;
+                border-radius: 6px;
+                transition: all 0.3s;
+            '>Visit Our Website</a>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Add custom CSS for better styling
     st.markdown("""
@@ -1560,7 +1581,8 @@ def main():
 
     # Buy Me a Coffee Widget
     st.markdown("""
--    """, unsafe_allow_html=True)
+    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="deyangeorgiev" data-description="Support me on Buy me a coffee!" data-message="If this tool has helped you, consider getting me a coffee :) Thanks!" data-color="#5F7FFF" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+    """, unsafe_allow_html=True)
 
     # Sidebar
     with st.sidebar:
